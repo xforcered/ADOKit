@@ -46,7 +46,7 @@ namespace ADOKit.Modules.Recon
                     {
 
                         // list the user if there is a match for what is being searched for
-                        if (user.directoryAlias.ToLower().Contains(search.ToLower()))
+                        if (user.directoryAlias.ToLower().Contains(search.ToLower()) || user.principalName.ToLower().Contains(search.ToLower()) )
                         {
 
                             Console.WriteLine("{0,50} | {1,50} | {2,50}", user.directoryAlias, user.displayName, user.principalName);
@@ -57,7 +57,6 @@ namespace ADOKit.Modules.Recon
                     Console.WriteLine("");
 
 
-
                 }
                 catch (Exception ex)
                 {
@@ -65,7 +64,6 @@ namespace ADOKit.Modules.Recon
                     Console.WriteLine("[-] ERROR: " + ex.Message);
                     Console.WriteLine("");
                 }
-
 
             }
 

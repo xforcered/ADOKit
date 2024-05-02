@@ -83,7 +83,8 @@ namespace ADOKit.Modules.Recon
                                 // go through each group member in the group and if our user matches, display it
                                 foreach (Objects.GroupMember member in groupMemberList)
                                 {
-                                    if (member.mailAddress.ToLower().Equals(user.principalName))
+                                    //Console.WriteLine("whoami Checking user " + user.principalName.ToLower() + "against group " + group.principalName + ", member " + member.mailAddress.ToLower());
+                                    if (member.mailAddress.ToLower().Equals(user.principalName.ToLower()))
                                     {
 
                                         Console.WriteLine("{0,70} | {1,50} | {2,50}", group.principalName, group.displayName, group.description);
@@ -102,17 +103,14 @@ namespace ADOKit.Modules.Recon
                     Console.WriteLine("");
 
 
-
-
-
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine("");
                     Console.WriteLine("[-] ERROR: " + ex.Message);
+                    Console.WriteLine("[-] ERROR: " + ex.StackTrace);
                     Console.WriteLine("");
                 }
-
 
             }
 

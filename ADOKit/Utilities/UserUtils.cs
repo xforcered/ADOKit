@@ -22,11 +22,20 @@ namespace ADOKit.Utilities
             // this is the list of users to return
             List<User> userList = new List<User>();
 
-
             // ignore SSL errors
             ServicePointManager.ServerCertificateValidationCallback = delegate (object s, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) { return true; };
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+            // parse the JSON output and display results
+            JsonTextReader jsonResult;
+
+            string propName = "";
+            string directoryAlias = "";
+            string displayName = "";
+            string principalName = "";
+            string descriptor = "";
+
 
             try
             {
@@ -34,45 +43,82 @@ namespace ADOKit.Utilities
                 url = url.Replace("dev.azure.com", "vssps.dev.azure.com");
 
                 // web request to get all users
-                HttpWebRequest webRequest = (HttpWebRequest)System.Net.WebRequest.Create(url + "/_apis/graph/users?api-version=7.0-preview.1");
-                if (webRequest != null)
+                string contToken = "";
+                string content = "";
+
+                HttpWebRequest webRequest = null;
+
+                // loop until we don't have a continuationToken in the response. if we do, fetch more 
+                do
                 {
+                    content = ""; // empty our buffer 
 
-                    // set header values
-                    webRequest.Method = "GET";
-                    webRequest.ContentType = "application/json";
-                    webRequest.UserAgent = "ADOKit-21e233d4334f9703d1a3a42b6e2efd38";
-
-                    // if cookie was provided
-                    if (credentials.ToLower().Contains("userauthentication="))
+                    if (contToken != "")
                     {
-                        webRequest.Headers.Add("Cookie", "X-VSS-UseRequestRouting=True; " + credentials);
-
+                        webRequest = (HttpWebRequest)System.Net.WebRequest.Create(url + "/_apis/graph/users?api-version=7.0-preview.1&continuationToken=" + contToken);
                     }
-
-                    // otherwise PAT was provided
                     else
                     {
-                        webRequest.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(":" + credentials)));
+                        webRequest = (HttpWebRequest)System.Net.WebRequest.Create(url + "/_apis/graph/users?api-version=7.0-preview.1");
                     }
 
-                    // get web response
-                    HttpWebResponse myWebResponse = (HttpWebResponse)await webRequest.GetResponseAsync();
-                    string content;
-                    var reader = new StreamReader(myWebResponse.GetResponseStream());
-                    content = reader.ReadToEnd();
+                    if (webRequest != null)
+                    {
 
+                        // set header values
+                        webRequest.Method = "GET";
+                        webRequest.ContentType = "application/json";
+                        webRequest.UserAgent = "ADOKit-21e233d4334f9703d1a3a42b6e2efd38";
+
+                        // if cookie was provided
+                        if (credentials.ToLower().Contains("userauthentication="))
+                        {
+                            webRequest.Headers.Add("Cookie", "X-VSS-UseRequestRouting=True; " + credentials);
+                        }
+                        // otherwise PAT was provided
+                        else
+                        {
+                            webRequest.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(":" + credentials)));
+                        }
+
+
+
+                        // get web response
+                        HttpWebResponse myWebResponse = (HttpWebResponse)await webRequest.GetResponseAsync();
+
+                        var reader = new StreamReader(myWebResponse.GetResponseStream());
+                        content += reader.ReadToEnd();
+
+                        // if there's a continuationToken header we need to send the request to get
+                        // a bit more ... and a bit more until there isn't a continuation token 
+
+                        contToken = "";
+                        // get the X-ms-continuationtoken header value
+                        for (int i = 0; i < myWebResponse.Headers.Count; i++)
+                        {
+
+                            // grab the header value
+                            if (myWebResponse.Headers.Keys[i].ToString().ToLower().Equals("x-ms-continuationtoken"))
+                            {
+                                //Console.WriteLine("[+] Response header : " + myWebResponse.Headers.Keys[i].ToString() + " / " + myWebResponse.Headers[i]);
+
+                                contToken = myWebResponse.Headers[i];
+                            }
+                        }
+
+                    }
 
                     // parse the JSON output and display results
-                    JsonTextReader jsonResult = new JsonTextReader(new StringReader(content));
+                    jsonResult = new JsonTextReader(new StringReader(content));
 
-                    string propName = "";
-                    string directoryAlias = "";
-                    string displayName = "";
-                    string principalName = "";
-                    string descriptor = "";
+                    propName = "";
+                    directoryAlias = "";
+                    displayName = "";
+                    principalName = "";
+                    descriptor = "";
 
-                    // read the json results
+
+                    // read the json results 
                     while (jsonResult.Read())
                     {
                         switch (jsonResult.TokenType.ToString())
@@ -94,7 +140,7 @@ namespace ADOKit.Utilities
                                         directoryAlias = "";
                                         displayName = "";
                                         principalName = "";
-   
+
                                     }
                                 }
 
@@ -145,21 +191,20 @@ namespace ADOKit.Utilities
                         }
 
                     }
-
-                }
+                } while (contToken != "") ;
 
             }
             catch (Exception ex)
             {
                 Console.WriteLine("");
                 Console.WriteLine("[-] ERROR: " + ex.Message);
+                Console.WriteLine("[-] ERROR: " + ex.StackTrace);
                 Console.WriteLine("");
             }
 
 
             return userList;
         }
-
 
 
         // get details for a specific user
@@ -289,6 +334,7 @@ namespace ADOKit.Utilities
             {
                 Console.WriteLine("");
                 Console.WriteLine("[-] ERROR: " + ex.Message);
+                Console.WriteLine("[-] ERROR: " + ex.StackTrace);
                 Console.WriteLine("");
             }
 
@@ -409,6 +455,7 @@ namespace ADOKit.Utilities
             catch (Exception ex)
             {
                 Console.WriteLine("");
+                Console.WriteLine("[-] ERROR: " + ex.StackTrace);
                 Console.WriteLine("[-] ERROR: " + ex.Message);
                 Console.WriteLine("");
             }
@@ -416,12 +463,6 @@ namespace ADOKit.Utilities
 
             return membershipList;
         }
-
-
-
-
-
-
 
         // get who the current user is
         public static async Task<string> getCurrentUser(string credentials, string url)
@@ -466,10 +507,14 @@ namespace ADOKit.Utilities
                     // get the X-Vss-Userdata header value
                     for (int i = 0; i < myWebResponse.Headers.Count; i++)
                     {
+			//DEBUG
+                        //Console.WriteLine("[+] Response header : " + myWebResponse.Headers.Keys[i].ToString() + " / " + myWebResponse.Headers[i]);
+
                         // grab the header value
                         if (myWebResponse.Headers.Keys[i].ToString().ToLower().Equals("x-vss-userdata"))
                         {
                             theUser = myWebResponse.Headers[i];
+                        
                         }
 
 
@@ -480,10 +525,12 @@ namespace ADOKit.Utilities
             }
             catch (Exception ex)
             {
+                System.Console.WriteLine("Exception " + ex.StackTrace);
                 return theUser;
             }
 
             return theUser;
+
 
         }
 
@@ -496,7 +543,7 @@ namespace ADOKit.Utilities
 
             foreach (Objects.User user in userList)
             {
-                if (user.principalName.Equals(principalName))
+                if (user.principalName.ToLower().Equals(principalName.ToLower()))
                 {
                     doesItExist = true;
                 }
@@ -504,7 +551,6 @@ namespace ADOKit.Utilities
 
             return doesItExist;
         }
-
 
     }
 }

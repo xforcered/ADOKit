@@ -32,7 +32,7 @@ namespace ADOKit.Utilities
             {
 
                 // web request to get all service connections for a user
-                HttpWebRequest webRequest = (HttpWebRequest)System.Net.WebRequest.Create(url + "/" + project + "/_apis/serviceendpoint/endpoints?api-version=7.0");
+                HttpWebRequest webRequest = (HttpWebRequest)System.Net.WebRequest.Create(url + "/" + project + "/_apis/serviceendpoint/endpoints?includeFailed=true&api-version=7.0");
                 if (webRequest != null)
                 {
 
@@ -122,8 +122,6 @@ namespace ADOKit.Utilities
                                     id = jsonResult.Value.ToString();
                                 }
 
-
-
                                 break;
                             case "Boolean":
                                 break;
@@ -149,7 +147,6 @@ namespace ADOKit.Utilities
 
             return serviceConnectionList;
         }
-
 
 
         // determine whether we already have a service connection in our list by the given unique id

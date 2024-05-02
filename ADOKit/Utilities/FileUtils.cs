@@ -142,15 +142,12 @@ namespace ADOKit.Utilities
 
             return filesList;
 
-
         }
-
 
 
         // get the file contents at a given file URL
         public static async Task<string> getFileContents(string credentials, string fileURL)
         {
-
 
             // this is the file content to return
             string fileContents = "";
@@ -215,7 +212,7 @@ namespace ADOKit.Utilities
 
             foreach (Objects.File file in fileList)
             {
-                if (file.fileURL.Equals(url))
+                if (file.fileURL.ToLower().Equals(url.ToLower()))
                 {
                     doesItExist = true;
                 }

@@ -70,6 +70,17 @@ namespace ADOKit.Modules.Privesc
 
                     }
 
+                    if (groupDescriptor == "")
+                    {
+                        Console.WriteLine("[*] ERROR We didn't find a group descriptor - there wasn't a match. Stopping.");
+                        return;
+                    }
+                    if (userDescriptor == "")
+                    {
+                        Console.WriteLine("[*] ERROR We didn't find a user descriptor - there wasn't a match. Stopping.");
+                        return;
+                    }
+
                     Console.WriteLine("");
                     Console.WriteLine("[*] INFO: Attempting to add " + username + " to the Project Collection Build Service Accounts group.");
                     Console.WriteLine("");
@@ -121,9 +132,6 @@ namespace ADOKit.Modules.Privesc
                     Console.WriteLine("");
 
 
-
-
-
                 }
                 catch (Exception ex)
                 {
@@ -131,7 +139,6 @@ namespace ADOKit.Modules.Privesc
                     Console.WriteLine("[-] ERROR: " + ex.Message);
                     Console.WriteLine("");
                 }
-
 
             }
 

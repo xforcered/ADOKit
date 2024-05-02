@@ -27,53 +27,98 @@ namespace ADOKit.Utilities
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
+	    // parse the JSON output and display results
+	    JsonTextReader jsonResult;
+	    
+	    string propName = "";
+	    string description = "";
+	    string displayName = "";
+	    string principalName = "";
+	    string descriptor = "";
+
             try
-            {
+	    {
 
                 url = url.Replace("dev.azure.com", "vssps.dev.azure.com");
 
+		// web request to get all users
+                string contToken = "";
+                string content = "";
+
+                HttpWebRequest webRequest = null;
+
                 // web request to get all users
-                HttpWebRequest webRequest = (HttpWebRequest)System.Net.WebRequest.Create(url + "/_apis/graph/groups?api-version=7.0-preview.1");
-                if (webRequest != null)
-                {
+		do {
 
-                    // set header values
-                    webRequest.Method = "GET";
-                    webRequest.ContentType = "application/json";
-                    webRequest.UserAgent = "ADOKit-21e233d4334f9703d1a3a42b6e2efd38";
+		    content="";
 
-                    // if cookie was provided
-                    if (credentials.ToLower().Contains("userauthentication="))
-                    {
-                        webRequest.Headers.Add("Cookie", "X-VSS-UseRequestRouting=True; " + credentials);
+		    if (contToken != "")
+		    {
+			webRequest = (HttpWebRequest)System.Net.WebRequest.Create(url + "/_apis/graph/groups?api-version=7.0-preview.1&continuationToken=" + contToken);
+		    }
+		    else
+		    {
+			webRequest = (HttpWebRequest)System.Net.WebRequest.Create(url + "/_apis/graph/groups?api-version=7.0-preview.1");			
+		    }
+		    
+		
+		    if (webRequest != null) {
 
-                    }
+			// set header values
+			webRequest.Method = "GET";
+			webRequest.ContentType = "application/json";
+			webRequest.UserAgent = "ADOKit-21e233d4334f9703d1a3a42b6e2efd38";
+		    
+			// if cookie was provided
+			if (credentials.ToLower().Contains("userauthentication="))
+			{
+			    webRequest.Headers.Add("Cookie", "X-VSS-UseRequestRouting=True; " + credentials);
+			
+			}
 
-                    // otherwise PAT was provided
-                    else
-                    {
-                        webRequest.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(":" + credentials)));
-                    }
+			// otherwise PAT was provided
+			else
+			{
+			    webRequest.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(":" + credentials)));
+			}
 
-                    // get web response
-                    HttpWebResponse myWebResponse = (HttpWebResponse)await webRequest.GetResponseAsync();
-                    string content;
-                    var reader = new StreamReader(myWebResponse.GetResponseStream());
-                    content = reader.ReadToEnd();
+			// get web response
+			HttpWebResponse myWebResponse = (HttpWebResponse)await webRequest.GetResponseAsync();
+			
+			var reader = new StreamReader(myWebResponse.GetResponseStream());
+			content = reader.ReadToEnd();
 
 
-                    // parse the JSON output and display results
-                    JsonTextReader jsonResult = new JsonTextReader(new StringReader(content));
+			 // if there's a continuationToken header we need to send the request to get
+                        // a bit more ... and a bit more until there isn't a continuation token 
 
-                    string propName = "";
-                    string description = "";
-                    string displayName = "";
-                    string principalName = "";
-                    string descriptor = "";
+                        contToken = "";
+                        // get the X-ms-continuationtoken header value
+                        for (int i = 0; i < myWebResponse.Headers.Count; i++)
+                        {
 
-                    // read the json results
-                    while (jsonResult.Read())
-                    {
+                            // grab the header value
+                            if (myWebResponse.Headers.Keys[i].ToString().ToLower().Equals("x-ms-continuationtoken"))
+                            {
+                                //Console.WriteLine("[+] Response header : " + myWebResponse.Headers.Keys[i].ToString() + " / " + myWebResponse.Headers[i]);
+
+                                contToken = myWebResponse.Headers[i];
+                            }
+                        }
+
+
+			// parse the JSON output and display results
+			jsonResult = new JsonTextReader(new StringReader(content));
+
+			propName = "";
+			description = "";
+			displayName = "";
+			principalName = "";
+			descriptor = "";
+
+			// read the json results
+			while (jsonResult.Read())
+			{
                         switch (jsonResult.TokenType.ToString())
                         {
                             case "StartObject":
@@ -142,21 +187,19 @@ namespace ADOKit.Utilities
                     }
 
                 }
-
+		
+		} while (contToken!="") ;
             }
             catch (Exception ex)
             {
                 Console.WriteLine("");
                 Console.WriteLine("[-] ERROR: " + ex.Message);
+                Console.WriteLine("[-] ERROR: " + ex.StackTrace);
                 Console.WriteLine("");
             }
 
-
             return groupList;
         }
-
-
-
 
         // get details for a group
         public static async Task<Group> getGroupDetails(string credentials, string url)
@@ -338,11 +381,20 @@ namespace ADOKit.Utilities
 
                     // get web response and determin if successful or not
                     HttpWebResponse myWebResponse = (HttpWebResponse)await webRequest.GetResponseAsync();
+
+
+                    /*
+                    for (int i = 0; i < myWebResponse.Headers.Count; i++)
+                    {
+                        Console.WriteLine("[+] Response header : " + myWebResponse.Headers.Keys[i].ToString() + " / " + myWebResponse.Headers[i]);
+
+                    } */
+
                     if (myWebResponse.StatusCode.ToString().ToLower().Equals("created"))
                     {
                         success = true;
                     }
-                   
+              
 
                 }
 
@@ -363,7 +415,7 @@ namespace ADOKit.Utilities
         // remove user from a group
         public static async Task<bool> removeUserFromGroup(string credentials, string url, string userDescriptor, string groupDescriptor)
         {
-            // whether addition was completed successfully
+            // whether removal was completed successfully
             bool success = false;
 
 
@@ -708,7 +760,6 @@ namespace ADOKit.Utilities
                 Console.WriteLine("[-] ERROR: " + ex.Message);
                 Console.WriteLine("");
             }
-
 
             return groupMemberList;
         }

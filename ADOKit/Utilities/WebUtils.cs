@@ -52,6 +52,12 @@ namespace ADOKit.Utilities
                         webRequest.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(":" + credentials)));
                     }
 
+                    // dump webrequest headers for debug 
+                    /* for (int i = 0; i < webRequest.Headers.Count; i++)
+                    {
+                        Console.WriteLine("[+] Request header : " + webRequest.Headers.Keys[i].ToString() + " / " + webRequest.Headers[i]);
+                    } */
+
                     // get web response and status code
                     HttpWebResponse myWebResponse = (HttpWebResponse)await webRequest.GetResponseAsync();
                     string statusCode = myWebResponse.StatusCode.ToString();
@@ -79,7 +85,6 @@ namespace ADOKit.Utilities
         {
 
             string orgID = "";
-
 
             // ignore SSL errors
             ServicePointManager.ServerCertificateValidationCallback = delegate (object s, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) { return true; };

@@ -32,7 +32,7 @@ namespace ADOKit.Utilities
 
 
                 // web request to get all repos in a given project
-                HttpWebRequest webRequest = (HttpWebRequest)System.Net.WebRequest.Create(projectURL + "/_apis/git/repositories?api-version=7.0");
+                HttpWebRequest webRequest = (HttpWebRequest)System.Net.WebRequest.Create(projectURL + "/_apis/git/repositories?includeHidden=true&api-version=7.0");
                 if (webRequest != null)
                 {
 
