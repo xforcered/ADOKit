@@ -19,7 +19,7 @@ namespace ADOKit
         private static string search = "";
         private static string id = "";
         private static string sshKey = "";
-        private static List<string> approvedModules = new List<string> { "check", "whoami", "listrepo", "searchrepo", "listproject", "searchproject", "searchcode", "searchfile", "listuser", "searchuser", "listgroup", "searchgroup", "getgroupmembers", "getpermissions", "createpat", "removepat", "listpat", "createsshkey", "removesshkey", "listsshkey", "addprojectadmin", "removeprojectadmin", "addbuildadmin", "removebuildadmin", "addcollectionadmin", "removecollectionadmin", "addcollectionbuildadmin", "removecollectionbuildadmin", "addcollectionbuildsvc", "removecollectionbuildsvc", "addcollectionsvc", "removecollectionsvc", "getpipelinevars", "getpipelinesecrets", "getserviceconnections" };
+        private static List<string> approvedModules = new List<string> { "check", "whoami", "listrepo", "searchrepo", "listproject", "searchproject", "searchcode", "searchfile", "listuser", "searchuser", "listgroup", "searchgroup", "getgroupmembers", "getpermissions", "createpat", "removepat", "listpat", "createsshkey", "removesshkey", "listsshkey", "addprojectadmin", "removeprojectadmin", "addbuildadmin", "removebuildadmin", "addcollectionadmin", "removecollectionadmin", "addcollectionbuildadmin", "removecollectionbuildadmin", "addcollectionbuildsvc", "removecollectionbuildsvc", "addcollectionsvc", "removecollectionsvc", "getpipelinevars", "getpipelinesecrets", "getvariablegroups", "getserviceconnections" };
 
 
 
@@ -236,6 +236,9 @@ namespace ADOKit
                         break;
                     case "getpipelinesecrets":
                         await Modules.Privesc.GetPipelineSecrets.execute(credential, url, project);
+                        break;
+                    case "getvariablegroups":
+                        await Modules.Privesc.GetVariableGroups.execute(credential, url, project);
                         break;
                     case "getserviceconnections":
                         await Modules.Privesc.GetServiceConnections.execute(credential, url, project);

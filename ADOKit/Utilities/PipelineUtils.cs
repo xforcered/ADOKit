@@ -447,5 +447,87 @@ namespace ADOKit.Utilities
         }
 
 
+        public static async Task<List<GroupVariable>> getVariableGroups(string credentials, string url, string project)
+        {
+
+            // this is the list of group IDs to return
+            List<GroupVariable> groupList = new List<GroupVariable>();
+
+
+            // ignore SSL errors
+            ServicePointManager.ServerCertificateValidationCallback = delegate (object s, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) { return true; };
+            ServicePointManager.Expect100Continue = true;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+            try
+            {
+
+                // web request to get all variable groups for a project
+                // https://learn.microsoft.com/en-us/rest/api/azure/devops/distributedtask/variablegroups/get-variable-groups
+                HttpWebRequest webRequest = (HttpWebRequest)System.Net.WebRequest.Create(url + "/" + project + "/_apis/distributedtask/variablegroups?api-version=7.2-preview.2");
+                if (webRequest != null)
+                {
+
+                    // set header values
+                    webRequest.Method = "GET";
+                    webRequest.ContentType = "application/json";
+                    webRequest.UserAgent = "ADOKit-21e233d4334f9703d1a3a42b6e2efd38";
+
+                    // if cookie was provided
+                    if (credentials.ToLower().Contains("userauthentication="))
+                    {
+                        webRequest.Headers.Add("Cookie", "X-VSS-UseRequestRouting=True; " + credentials);
+                    }
+
+                    // otherwise PAT was provided
+                    else
+                    {
+                        webRequest.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(":" + credentials)));
+                    }
+
+
+                    // get web response
+                    HttpWebResponse myWebResponse = (HttpWebResponse)await webRequest.GetResponseAsync();
+                    string content;
+                    var reader = new StreamReader(myWebResponse.GetResponseStream());
+                    content = reader.ReadToEnd();
+
+
+                    // parse the JSON output and display results
+                    dynamic jsonResult = JsonConvert.DeserializeObject(content);
+
+                    string groupName = "";
+                    string variableName = "";
+                    string variableValue = "";
+
+                    // read the json results, first all groups
+                    foreach (var group in jsonResult.value)
+                    {
+                        groupName = group.name;
+
+                        // then all variables for this group
+                        foreach(var variable in group.variables)
+                        {
+                            variableName = variable.Name;
+                            variableValue = variable.Value.isSecret=="true" ? "[HIDDEN]" : variable.Value.value;
+                            groupList.Add(new GroupVariable(variableName, variableValue, groupName));
+                        }
+                    }
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("");
+                Console.WriteLine("[-] ERROR: " + ex.Message);
+                Console.WriteLine("");
+            }
+
+
+            return groupList;
+
+        }
+
     }
 }

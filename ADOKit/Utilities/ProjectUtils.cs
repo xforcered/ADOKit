@@ -118,7 +118,7 @@ namespace ADOKit.Utilities
         }
 
 
-        // get a list of all proejcts
+        // get a list of all projects
         public static async Task<List<Project>> getAllProjects(string credentials, string url)
         {
             List<Objects.Project> projectList = new List<Objects.Project>();
